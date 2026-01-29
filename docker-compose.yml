@@ -1,0 +1,49 @@
+services:
+  db:
+    image: ankane/pgvector:latest
+    container_name: documind-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 2040
+      POSTGRES_DB: documind
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  backend:
+    build: ./backend
+    container_name: documind-backend
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      - DATABASE_URL=postgresql://postgres:2040@db:5432/documind
+      - password=2040
+    depends_on:
+      - db
+    volumes:
+      - ./backend:/app
+    restart: unless-stopped
+
+  frontend:
+    build: ./frontend
+    container_name: documind-frontend
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend
+    stdin_open: true
+    tty: true
+    environment:
+      - VITE_API_URL=http://localhost:8000
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    user: "root"
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
